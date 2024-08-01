@@ -1,0 +1,17 @@
+\d
+
+CREATE TABLE blogs (
+id SERIAL PRIMARY KEY,
+author TEXT,
+url TEXT NOT NULL,
+title TEXT NOT NULL,
+likes INTEGER DEFAULT 0
+)
+;
+
+insert into blogs (author, url, title, likes) values ('me', 'www.me.com', 'about me', '0');
+insert into blogs (author, url, title, likes) values ('you', 'www.you.com', 'about you', '1');
+
+select * from blogs
+
+\q
