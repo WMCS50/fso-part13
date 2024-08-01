@@ -35,18 +35,81 @@ Blog.init({
   modelName: 'blog'
 })
 
+app.use(express.json())
+
+// get all blogs
 app.get('/api/blogs', async (req, res) => {
   const blogs = await Blog.findAll()
     res.json(blogs)
 })
 
+// create a blog
 app.post('/api/blogs', async (req, res) => {
   try {
-    const blog = await Blog.create(req.body)
-    res.json(blog)
+    const { author, url, title, likes } = req.body
+
+    if (!url || !title) {
+      return res.status(400).json({ error: 'URL and title required' })
+    }
+
+    const newBlog = await Blog.create({
+      author,
+      url,
+      title,
+      likes: likes || 0
+    })
+    res.status(201).json(newBlog)
   } catch(error) {
-    return res.status(400).json({error})
+    return res.status(500).json({ error: 'Unable to create new blog' })
   }
+})
+
+// find a blog
+app.get('/api/blogs/:id', async (req, res) => {
+  const blog = await Blog.findByPk(req.params.id)
+  if (blog) {
+    res.json(blog)
+  } else {
+    res.status(404).end()
+  }
+})
+
+// delete a blog
+app.delete('/api/blogs/:id', async (req, res) => {
+  try {
+    const blog = await Blog.findByPk(req.params.id)
+    if (blog) {
+      await blog.destroy()
+      res.status(204).end()
+    } else {
+      res.status(404).end()
+    }
+  } catch(error) {
+    return res.status(400).json({ error: 'Unable to delete blog' })
+  }
+})
+
+// modify a blog
+app.put('/api/blogs/:id', async (req, res) => {
+  try{
+    const blog = await Blog.findByPk(req.params.id)
+    if (blog) {
+      const { author, url, title, likes } = req.body;
+      blog.author = author ?? blog.author
+      blog.url = url ?? blog.url
+      blog.title = title ?? blog.title
+      blog.likes = likes ?? blog.likes
+  
+      await blog.save()
+      res.json(blog)
+    } else {
+      res.status(404).end()
+    }
+  } catch (error) {
+    console.error(error)
+    res.status(500).json({ error: 'Unable to update blog' })
+  }
+  
 })
 
 const PORT = process.env.PORT || 3001
