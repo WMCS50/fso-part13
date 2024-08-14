@@ -1,26 +1,30 @@
 const router = require('express').Router()
-const { Blog } = require('../models')
+const { Blog, User } = require('../models')
 const blogFinder = require('../middleware/blogFinder')
+const tokenExtractor = require('../middleware/tokenExtractor')
 
 // get all blogs
 router.get('/', async (req, res) => {
-  const blogs = await Blog.findAll()
+  try {
+    const blogs = await Blog.findAll({
+      include: {
+        model: User,
+        attributes: ['username']
+      }
+    })
     res.json(blogs)
+  } catch (error) {
+    next(error)
+  }
 })
 
 // create a blog
-router.post('/', async (req, res, next) => {
+router.post('/', tokenExtractor, async (req, res, next) => {
   try {
-    const { author, url, title, likes } = req.body
-
-    const newBlog = await Blog.create({
-      author,
-      url,
-      title,
-      likes: likes || 0
-    })
-    res.status(201).json(newBlog)
-  } catch(error) {
+    const user = await User.findByPk(req.decodedToken.id)
+    const blog = await Blog.create({...req.body, userId: user.id})
+    return res.status(201).json(blog)
+  } catch (error) {
     next(error)
   }
 })
@@ -35,16 +39,20 @@ router.get('/:id', blogFinder, async (req, res) => {
 })
 
 // delete a blog
-router.delete('/:id', blogFinder, async (req, res) => {
+router.delete('/:id', tokenExtractor, blogFinder, async (req, res, next) => {
   try {
     if (req.blog) {
+      if (req.blog.userId !== req.decodedToken.id) {
+        return res.status(403).json({ error: 'Blogs can only be deleted by their creators'})
+      }
+
       await req.blog.destroy()
       res.status(204).end()
     } else {
       res.status(404).end()
     }
   } catch(error) {
-    return res.status(400).json({ error: 'Unable to delete blog' })
+    next(error)
   }
 })
 
