@@ -1,3 +1,4 @@
 .secret-info
 .env
+.seed
 node_modules
