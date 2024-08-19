@@ -1,5 +1,5 @@
 const router = require('express').Router()
-const { User, Blog } = require('../models')
+const { User, Blog, ReadingList, Membership } = require('../models')
 
 // get all users
 router.get('/', async (req, res) => {
@@ -29,15 +29,47 @@ router.post('/', async (req, res) => {
   }
 })
 
-// find a user
-router.get('/:id', async (req, res) => {
-  const user = await User.findByPk(req.params.id)
-  if (user) {
-    res.json(user)
-  } else {
-    res.status(404).end()
-  }
-})
+// get a user and allow options on what's returned base on reading list status
+  router.get('/:id', async (req, res, next) => {
+    try {
+      const user = await User.findByPk(req.params.id, {
+        include: {
+          model: ReadingList,
+          include: {
+            model: Blog,
+            through: { 
+              attributes: [] 
+            },
+            attributes: ['id', 'url', 'title', 'author', 'likes', 'year']
+          }
+        },
+      })
+  
+      if (!user) {
+        return res.status(404).json({ error: 'User not found' })
+      }
+  
+      //formatting response to exercise requirements
+      const response = {
+        name: user.name,
+        username: user.username,
+        readings: user.reading_lists.flatMap(readingList =>
+          readingList.blogs.map(blog => ({
+            id: blog.id,
+            url: blog.url,
+            title: blog.title,
+            author: blog.author,
+            likes: blog.likes,
+            year: blog.year,
+          }))
+        ),
+      }
+
+      res.json(response)
+    } catch (error) {
+      next(error)
+    }
+  })
 
 // modify a user
 router.put('/:username', async (req, res, next) => {

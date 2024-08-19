@@ -33,7 +33,12 @@ Blog.init({
       min: 1991,
       max: new Date().getFullYear(),
     },
-  }
+  },
+  read: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false
+  } 
 }, {
   sequelize,
   underscored: true,
@@ -42,3 +47,4 @@ Blog.init({
 })
 
 module.exports = Blog
+
