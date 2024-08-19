@@ -32,6 +32,13 @@ router.post('/', async (req, res) => {
 // get a user and allow options on what's returned based on reading list status
 router.get('/:id', async (req, res, next) => {
   try {
+    const { read } = req.query
+    
+    const where = {}
+    if (read !== undefined) {
+      where.read = read === 'true'
+    }
+        
     const user = await User.findByPk(req.params.id, {
       include: {
         model: ReadingList,
@@ -40,12 +47,13 @@ router.get('/:id', async (req, res, next) => {
           model: Blog,
           through: {
             model: Membership,
-            attributes: ['id', 'read'],  // Include the correct Membership data
+            where,
+            attributes: ['id', 'read'],
           },
           attributes: ['id', 'url', 'title', 'author', 'likes', 'year'],
         },
       },
-    });
+    })
 
     if (!user) {
       return res.status(404).json({ error: 'User not found' })
@@ -71,7 +79,7 @@ router.get('/:id', async (req, res, next) => {
           }] : [],
         })),
       })),
-    };
+    }
 
     res.json(response)
     } catch (error) {
