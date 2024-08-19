@@ -25,6 +25,11 @@ Membership.init({
     allowNull: true,
     references: { model: 'user', key: 'id' },
   },
+  read: {
+    type: DataTypes.BOOLEAN,
+    allowNull: false,
+    defaultValue: false,
+  },
 }, {
   sequelize,
   underscored: true,

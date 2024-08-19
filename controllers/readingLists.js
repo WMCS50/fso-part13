@@ -71,13 +71,12 @@ router.put('/:id', tokenExtractor, async (req, res, next) => {
       return res.status(400).json({ error: 'User must be logged in' })
     }
   
-    const membership = await Membership.findByPk(req.params.id, {
-      include: {
-        model: ReadingList,
-        where: { userId: user.id }
-      }
-    })
+    const membership = await Membership.findByPk(req.params.id)
 
+    if (!membership) {
+      return res.status(404).json({ error: 'Membership entry not found' })
+    }
+    
       membership.read = req.body.read === true,
       await membership.save()
     

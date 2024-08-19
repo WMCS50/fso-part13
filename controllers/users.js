@@ -29,43 +29,51 @@ router.post('/', async (req, res) => {
   }
 })
 
-// get a user and allow options on what's returned base on reading list status
-  router.get('/:id', async (req, res, next) => {
-    try {
-      const user = await User.findByPk(req.params.id, {
+// get a user and allow options on what's returned based on reading list status
+router.get('/:id', async (req, res, next) => {
+  try {
+    const user = await User.findByPk(req.params.id, {
+      include: {
+        model: ReadingList,
+        as: 'readings',
         include: {
-          model: ReadingList,
-          include: {
-            model: Blog,
-            through: { 
-              attributes: [] 
-            },
-            attributes: ['id', 'url', 'title', 'author', 'likes', 'year']
-          }
+          model: Blog,
+          through: {
+            model: Membership,
+            attributes: ['id', 'read'],  // Include the correct Membership data
+          },
+          attributes: ['id', 'url', 'title', 'author', 'likes', 'year'],
         },
-      })
-  
-      if (!user) {
-        return res.status(404).json({ error: 'User not found' })
-      }
-  
-      //formatting response to exercise requirements
-      const response = {
-        name: user.name,
-        username: user.username,
-        readings: user.reading_lists.flatMap(readingList =>
-          readingList.blogs.map(blog => ({
-            id: blog.id,
-            url: blog.url,
-            title: blog.title,
-            author: blog.author,
-            likes: blog.likes,
-            year: blog.year,
-          }))
-        ),
-      }
+      },
+    });
 
-      res.json(response)
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' })
+    }
+
+    // Format the response to match the exercise requirements
+    const response = {
+      name: user.name,
+      username: user.username,
+      readings: user.readings.map(readingList => ({
+        id: readingList.id,
+        name: readingList.name,
+        blogs: readingList.blogs.map(blog => ({
+          id: blog.id,
+          url: blog.url,
+          title: blog.title,
+          author: blog.author,
+          likes: blog.likes,
+          year: blog.year,
+          readinglists: blog.membership ? [{
+            read: blog.membership.read,
+            id: blog.membership.id,
+          }] : [],
+        })),
+      })),
+    };
+
+    res.json(response)
     } catch (error) {
       next(error)
     }
